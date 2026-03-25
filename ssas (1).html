@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SSAS — Sistema Sander</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0f0e0c;--surface:#1a1814;--surface2:#242018;--border:#2e2a22;--gold:#c9a84c;--gold-light:#e4c97a;--gold-dim:#7a6430;--text:#f0ead8;--text-muted:#8a8070;--text-dim:#5a5448;--urgent:#e05a3a;--urgent-bg:#2a1510;--medium:#d4943a;--medium-bg:#271e10;--low:#4a9e6a;--low-bg:#0f2018;--open:#4a8fc4;--open-bg:#0f1e2a;--radius:10px;--radius-sm:6px;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;}
+  #screen-login{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);background-image:radial-gradient(ellipse at 60% 30%,rgba(201,168,76,.07) 0%,transparent 60%);}
+  .login-box{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:44px 40px;width:100%;max-width:380px;text-align:center;}
+  .login-logo{font-family:'DM Serif Display',serif;font-size:42px;color:var(--gold);margin-bottom:4px;}
+  .login-sub{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-dim);font-family:'DM Mono',monospace;margin-bottom:36px;}
+  .login-box .form-group{text-align:left;margin-bottom:16px;}
+  .login-box label{display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);font-family:'DM Mono',monospace;margin-bottom:7px;}
+  .login-box input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:11px 14px;color:var(--text);font-family:'Sora',sans-serif;font-size:14px;outline:none;transition:border .15s;}
+  .login-box input:focus{border-color:var(--gold-dim);}
+  .login-btn{width:100%;padding:12px;background:var(--gold);color:var(--bg);border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;font-family:'Sora',sans-serif;margin-top:8px;transition:background .15s;}
+  .login-btn:hover{background:var(--gold-light);}
+  .login-btn:disabled{opacity:.6;cursor:not-allowed;}
+  .login-error{color:var(--urgent);font-size:12px;margin-top:12px;min-height:18px;}
+  #screen-app{display:none;min-height:100vh;}
+  .sidebar{position:fixed;left:0;top:0;bottom:0;width:220px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:100;}
+  .logo{padding:28px 20px 24px;border-bottom:1px solid var(--border);}
+  .logo-title{font-family:'DM Serif Display',serif;font-size:22px;color:var(--gold);letter-spacing:.02em;line-height:1;}
+  .logo-sub{font-size:10px;color:var(--text-dim);letter-spacing:.15em;text-transform:uppercase;margin-top:5px;font-family:'DM Mono',monospace;}
+  .nav{padding:16px 10px;flex:1;}
+  .nav-label{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-dim);font-family:'DM Mono',monospace;padding:0 10px;margin:12px 0 6px;}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--radius-sm);cursor:pointer;color:var(--text-muted);transition:all .15s;font-size:13px;border:none;background:none;width:100%;text-align:left;}
+  .nav-item:hover{background:var(--surface2);color:var(--text);}
+  .nav-item.active{background:rgba(201,168,76,.12);color:var(--gold);}
+  .nav-item .icon{font-size:15px;width:18px;text-align:center;}
+  .nav-badge{margin-left:auto;background:var(--urgent);color:#fff;font-size:10px;font-family:'DM Mono',monospace;padding:1px 6px;border-radius:20px;}
+  .sidebar-footer{padding:16px;border-top:1px solid var(--border);}
+  .user-pill{display:flex;align-items:center;gap:10px;}
+  .avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--gold-dim),var(--gold));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--bg);flex-shrink:0;text-transform:uppercase;}
+  .user-name{font-size:12px;font-weight:500;}
+  .user-role{font-size:10px;color:var(--text-muted);}
+  .logout-btn{background:none;border:none;color:var(--text-dim);font-size:11px;cursor:pointer;margin-top:6px;font-family:'Sora',sans-serif;padding:2px 0;transition:color .15s;display:block;}
+  .logout-btn:hover{color:var(--urgent);}
+  .main{margin-left:220px;min-height:100vh;}
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:18px 32px;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:50;}
+  .page-title{font-family:'DM Serif Display',serif;font-size:20px;}
+  .topbar-actions{display:flex;gap:10px;align-items:center;}
+  .btn{display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:var(--radius-sm);font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .15s;font-family:'Sora',sans-serif;}
+  .btn-primary{background:var(--gold);color:var(--bg);}
+  .btn-primary:hover{background:var(--gold-light);}
+  .btn-ghost{background:transparent;color:var(--text-muted);border:1px solid var(--border);}
+  .btn-ghost:hover{background:var(--surface2);color:var(--text);}
+  .btn-success{background:var(--low-bg);color:var(--low);border:1px solid rgba(74,158,106,.3);}
+  .btn-success:hover{background:rgba(74,158,106,.2);}
+  .btn-sm{padding:6px 12px;font-size:12px;}
+  .content{padding:28px 32px;}
+  .page{display:none;}
+  .page.active{display:block;}
+  .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px;}
+  .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;}
+  .stat-label{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-dim);font-family:'DM Mono',monospace;margin-bottom:10px;}
+  .stat-value{font-family:'DM Serif Display',serif;font-size:32px;line-height:1;margin-bottom:4px;}
+  .stat-meta{font-size:11px;color:var(--text-muted);}
+  .stat-urgent .stat-value{color:var(--urgent);}
+  .stat-open .stat-value{color:var(--open);}
+  .stat-prev .stat-value{color:var(--gold);}
+  .stat-done .stat-value{color:var(--low);}
+  .section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+  .section-title{font-family:'DM Serif Display',serif;font-size:17px;}
+  .filters{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+  .filter-btn{padding:5px 12px;border-radius:20px;font-size:12px;cursor:pointer;border:1px solid var(--border);background:none;color:var(--text-muted);transition:all .15s;font-family:'Sora',sans-serif;}
+  .filter-btn:hover,.filter-btn.active{border-color:var(--gold-dim);color:var(--gold);background:rgba(201,168,76,.08);}
+  .table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+  table{width:100%;border-collapse:collapse;}
+  thead tr{border-bottom:1px solid var(--border);}
+  th{padding:11px 16px;text-align:left;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-dim);font-family:'DM Mono',monospace;font-weight:500;}
+  td{padding:13px 16px;font-size:13px;border-bottom:1px solid rgba(46,42,34,.6);vertical-align:middle;}
+  tr:last-child td{border-bottom:none;}
+  tbody tr{transition:background .12s;cursor:pointer;}
+  tbody tr:hover{background:var(--surface2);}
+  .ticket-id{font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted);}
+  .ticket-title{font-weight:500;}
+  .ticket-desc{font-size:11px;color:var(--text-muted);margin-top:2px;}
+  .badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:500;font-family:'DM Mono',monospace;white-space:nowrap;}
+  .badge::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor;}
+  .badge-urgent{background:var(--urgent-bg);color:var(--urgent);border:1px solid rgba(224,90,58,.2);}
+  .badge-medium{background:var(--medium-bg);color:var(--medium);border:1px solid rgba(212,148,58,.2);}
+  .badge-low{background:var(--low-bg);color:var(--low);border:1px solid rgba(74,158,106,.2);}
+  .badge-open{background:var(--open-bg);color:var(--open);border:1px solid rgba(74,143,196,.2);}
+  .badge-progress{background:rgba(201,168,76,.1);color:var(--gold);border:1px solid rgba(201,168,76,.2);}
+  .badge-done{background:var(--low-bg);color:var(--low);border:1px solid rgba(74,158,106,.2);}
+  .badge-waiting{background:rgba(90,84,72,.3);color:var(--text-muted);border:1px solid var(--border);}
+  .unit-tag{display:inline-block;padding:3px 9px;border-radius:4px;font-size:11px;font-family:'DM Mono',monospace;background:var(--surface2);color:var(--text-muted);border:1px solid var(--border);}
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .2s;backdrop-filter:blur(4px);}
+  .modal-overlay.open{opacity:1;pointer-events:all;}
+  .modal{background:var(--surface);border:1px solid var(--border);border-radius:14px;width:100%;max-width:560px;max-height:85vh;overflow-y:auto;transform:translateY(16px);transition:transform .2s;}
+  .modal-overlay.open .modal{transform:translateY(0);}
+  .modal-header{padding:22px 26px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+  .modal-title{font-family:'DM Serif Display',serif;font-size:19px;}
+  .modal-close{background:none;border:none;color:var(--text-muted);font-size:20px;cursor:pointer;}
+  .modal-close:hover{color:var(--text);}
+  .modal-body{padding:22px 26px;}
+  .form-group{margin-bottom:18px;}
+  label{display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);font-family:'DM Mono',monospace;margin-bottom:7px;}
+  input,select,textarea{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 13px;color:var(--text);font-family:'Sora',sans-serif;font-size:13px;transition:border .15s;outline:none;}
+  input:focus,select:focus,textarea:focus{border-color:var(--gold-dim);}
+  select option{background:var(--surface2);}
+  textarea{resize:vertical;min-height:80px;}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .modal-footer{padding:16px 26px 22px;display:flex;gap:10px;justify-content:flex-end;}
+  .detail-field{margin-bottom:16px;}
+  .detail-field-label{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-dim);font-family:'DM Mono',monospace;margin-bottom:5px;}
+  .detail-field-value{font-size:14px;}
+  .detail-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  .history-log{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin-top:6px;}
+  .log-entry{display:flex;gap:10px;margin-bottom:10px;font-size:12px;}
+  .log-entry:last-child{margin-bottom:0;}
+  .log-time{font-family:'DM Mono',monospace;color:var(--text-dim);white-space:nowrap;font-size:11px;padding-top:1px;}
+  .log-text{color:var(--text-muted);}
+  .prev-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;}
+  .prev-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;transition:border-color .15s;}
+  .prev-card:hover{border-color:var(--gold-dim);}
+  .prev-card-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px;}
+  .prev-card-title{font-weight:600;font-size:14px;}
+  .prev-card-unit{font-size:11px;color:var(--text-muted);margin-top:3px;}
+  .prev-bar-wrap{background:var(--bg);border-radius:4px;height:5px;margin:12px 0 8px;overflow:hidden;}
+  .prev-bar{height:100%;border-radius:4px;background:var(--gold);transition:width .4s;}
+  .prev-bar.overdue{background:var(--urgent);}
+  .prev-meta{display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);font-family:'DM Mono',monospace;}
+  .approval-banner{background:linear-gradient(135deg,rgba(201,168,76,.1),rgba(201,168,76,.05));border:1px solid rgba(201,168,76,.25);border-radius:var(--radius);padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;gap:14px;font-size:13px;}
+  .approval-banner .icon{font-size:20px;}
+  .approval-banner strong{color:var(--gold);}
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+  .empty{text-align:center;padding:50px 20px;color:var(--text-dim);}
+  .empty-icon{font-size:36px;margin-bottom:12px;}
+  .empty-text{font-size:14px;}
+  .loading-overlay{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:500;flex-direction:column;gap:16px;}
+  .loading-spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .loading-text{font-family:'DM Mono',monospace;font-size:12px;color:var(--text-dim);letter-spacing:.1em;}
+  .toast{position:fixed;bottom:24px;right:24px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:13px 18px;font-size:13px;color:var(--text);z-index:999;transform:translateY(80px);opacity:0;transition:all .25s;display:flex;align-items:center;gap:10px;max-width:320px;}
+  .toast.show{transform:translateY(0);opacity:1;}
+  ::-webkit-scrollbar{width:6px;height:6px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+  @media(max-width:900px){.sidebar{width:60px;}.nav-item span,.logo-sub,.user-name,.user-role,.nav-label,.logout-btn{display:none;}.main{margin-left:60px;}.stats-row{grid-template-columns:repeat(2,1fr);}.prev-grid{grid-template-columns:1fr;}.two-col{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loading-overlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text">CARREGANDO SSAS...</div>
+</div>
+
+<!-- LOGIN -->
+<div id="screen-login" style="display:none">
+  <div class="login-box">
+    <div class="login-logo">SSAS</div>
+    <div class="login-sub">Sistema Sander — Hannover Group</div>
+    <div class="form-group"><label>Usuário</label><input type="text" id="login-user" placeholder="seu.nome" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <div class="form-group"><label>Senha</label><input type="password" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <button class="login-btn" id="login-btn" onclick="doLogin()">Entrar</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="screen-app">
+  <aside class="sidebar">
+    <div class="logo"><div class="logo-title">SSAS</div><div class="logo-sub">Sistema Sander</div></div>
+    <nav class="nav">
+      <div class="nav-label">Principal</div>
+      <button class="nav-item active" onclick="showPage('dashboard',this)"><span class="icon">⬡</span><span>Dashboard</span></button>
+      <button class="nav-item" onclick="showPage('chamados',this)"><span class="icon">🎫</span><span>Chamados</span><span class="nav-badge" id="badge-abertos">0</span></button>
+      <button class="nav-item" onclick="showPage('preventivas',this)"><span class="icon">🗓</span><span>Preventivas</span></button>
+      <div class="nav-label">Gestão</div>
+      <button class="nav-item" onclick="showPage('historico',this)"><span class="icon">📋</span><span>Histórico</span></button>
+      <button class="nav-item" onclick="showPage('equipe',this)"><span class="icon">👥</span><span>Equipe</span></button>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-pill">
+        <div class="avatar" id="user-avatar">?</div>
+        <div><div class="user-name" id="user-display">—</div><div class="user-role" id="user-role-display">—</div></div>
+      </div>
+      <button class="logout-btn" onclick="doLogout()">↩ Sair</button>
+    </div>
+  </aside>
+  <main class="main">
+    <div class="topbar">
+      <div class="page-title" id="topbar-title">Dashboard</div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost btn-sm" id="btn-sync" onclick="syncAll()">↻ Sincronizar</button>
+        <button class="btn btn-ghost btn-sm" onclick="openModal('modal-new')">＋ Novo Chamado</button>
+      </div>
+    </div>
+    <div class="content">
+
+      <div class="page active" id="page-dashboard">
+        <div class="stats-row">
+          <div class="stat-card stat-urgent"><div class="stat-label">Urgentes Abertos</div><div class="stat-value" id="stat-urgent">—</div><div class="stat-meta">requerem ação imediata</div></div>
+          <div class="stat-card stat-open"><div class="stat-label">Total em Aberto</div><div class="stat-value" id="stat-open">—</div><div class="stat-meta">em todas as unidades</div></div>
+          <div class="stat-card stat-prev"><div class="stat-label">Preventivas Próximas</div><div class="stat-value" id="stat-prev-soon">—</div><div class="stat-meta">a vencer em breve</div></div>
+          <div class="stat-card stat-done"><div class="stat-label">Concluídos (mês)</div><div class="stat-value" id="stat-done">—</div><div class="stat-meta">neste mês</div></div>
+        </div>
+        <div class="two-col">
+          <div>
+            <div class="section-header"><div class="section-title">Chamados Urgentes</div><button class="btn btn-ghost btn-sm" onclick="showPage('chamados',document.querySelectorAll('.nav-item')[1])">Ver todos</button></div>
+            <div class="table-wrap"><table><thead><tr><th>Chamado</th><th>Unidade</th><th>Status</th></tr></thead><tbody id="tb-urgent"></tbody></table></div>
+          </div>
+          <div>
+            <div class="section-header"><div class="section-title">Preventivas Próximas</div></div>
+            <div id="prev-dash"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="page" id="page-chamados">
+        <div class="approval-banner" id="approval-banner" style="display:none">
+          <span class="icon">⏳</span><span>Há chamados <strong>aguardando aprovação</strong>.</span>
+          <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="filterTickets('aguardando',null)">Ver agora</button>
+        </div>
+        <div class="filters">
+          <button class="filter-btn active" onclick="filterTickets('todos',this)">Todos</button>
+          <button class="filter-btn" onclick="filterTickets('urgente',this)">🔴 Urgente</button>
+          <button class="filter-btn" onclick="filterTickets('medio',this)">🟡 Médio</button>
+          <button class="filter-btn" onclick="filterTickets('baixo',this)">🟢 Baixo</button>
+          <button class="filter-btn" onclick="filterTickets('aberto',this)">Abertos</button>
+          <button class="filter-btn" onclick="filterTickets('em_andamento',this)">Em andamento</button>
+          <button class="filter-btn" onclick="filterTickets('aguardando',this)">Ag. Aprovação</button>
+          <button class="filter-btn" onclick="filterTickets('moema',this)">Fondue Moema</button>
+          <button class="filter-btn" onclick="filterTickets('tatuape',this)">Fondue Tatuapé</button>
+          <button class="filter-btn" onclick="filterTickets('perdizes',this)">Fondue Perdizes</button>
+          <button class="filter-btn" onclick="filterTickets('tomahawk',this)">Tomahawk</button>
+          <button class="filter-btn" onclick="filterTickets('hamburgo',this)">Hamburgo Fries</button>
+          <button class="filter-btn" onclick="filterTickets('escritorio',this)">Escritório</button>
+        </div>
+        <div class="table-wrap"><table><thead><tr><th>#</th><th>Descrição</th><th>Unidade</th><th>Prioridade</th><th>Status</th><th>Aberto em</th><th>Ações</th></tr></thead><tbody id="tb-chamados"></tbody></table></div>
+      </div>
+
+      <div class="page" id="page-preventivas">
+        <div class="section-header"><div class="section-title">Manutenções Preventivas</div><button class="btn btn-primary btn-sm" onclick="openModal('modal-new-prev')">＋ Nova</button></div>
+        <div class="prev-grid" id="prev-grid"></div>
+      </div>
+
+      <div class="page" id="page-historico">
+        <div class="section-header"><div class="section-title">Histórico de Chamados</div></div>
+        <div class="table-wrap"><table><thead><tr><th>#</th><th>Descrição</th><th>Unidade</th><th>Prioridade</th><th>Aberto em</th><th>Por</th></tr></thead><tbody id="tb-historico"></tbody></table></div>
+      </div>
+
+      <div class="page" id="page-equipe">
+        <div class="section-header"><div class="section-title">Equipe</div><button class="btn btn-primary btn-sm" onclick="openModal('modal-new-member')">＋ Adicionar</button></div>
+        <div class="table-wrap"><table><thead><tr><th>Técnico</th><th>Especialidade</th><th>Unidade Base</th><th>Pode Abrir</th></tr></thead><tbody id="tb-equipe"></tbody></table></div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- MODAIS -->
+<div class="modal-overlay" id="modal-new" onclick="closeOnOverlay(event,'modal-new')">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Abrir Chamado</div><button class="modal-close" onclick="closeModal('modal-new')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label>Unidade</label><select id="new-unit"><option value="moema">Fondue Moema</option><option value="tatuape">Fondue Tatuapé</option><option value="perdizes">Fondue Perdizes</option><option value="tomahawk">Tomahawk</option><option value="hamburgo">Hamburgo Fries</option><option value="escritorio">Escritório Central</option></select></div>
+        <div class="form-group"><label>Prioridade</label><select id="new-priority"><option value="urgente">🔴 Urgente</option><option value="medio" selected>🟡 Médio</option><option value="baixo">🟢 Baixo</option></select></div>
+      </div>
+      <div class="form-group"><label>Equipamento / Local</label><input type="text" id="new-title" placeholder="Ex: Fogão industrial, câmara fria..."></div>
+      <div class="form-group"><label>Descrição do Problema</label><textarea id="new-desc" placeholder="Descreva com detalhes..."></textarea></div>
+      <div class="form-row">
+        <div class="form-group"><label>Aberto por</label><input type="text" id="new-opener" placeholder="Seu nome"></div>
+        <div class="form-group"><label>Categoria</label><select id="new-category"><option>Equipamento de Cozinha</option><option>Infraestrutura</option><option>Elétrica</option><option>Hidráulica</option><option>TI / Sistemas</option><option>Limpeza / Higiene</option><option>Outro</option></select></div>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modal-new')">Cancelar</button><button class="btn btn-primary" onclick="createTicket()">Abrir Chamado</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-detail" onclick="closeOnOverlay(event,'modal-detail')">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-header"><div><div class="modal-title" id="detail-title">—</div><div style="font-size:11px;color:var(--text-muted);margin-top:4px;font-family:'DM Mono',monospace" id="detail-id">—</div></div><button class="modal-close" onclick="closeModal('modal-detail')">✕</button></div>
+    <div class="modal-body">
+      <div class="detail-row">
+        <div class="detail-field"><div class="detail-field-label">Unidade</div><div class="detail-field-value" id="detail-unit">—</div></div>
+        <div class="detail-field"><div class="detail-field-label">Prioridade</div><div class="detail-field-value" id="detail-priority">—</div></div>
+        <div class="detail-field"><div class="detail-field-label">Status</div><div class="detail-field-value" id="detail-status">—</div></div>
+        <div class="detail-field"><div class="detail-field-label">Categoria</div><div class="detail-field-value" id="detail-category">—</div></div>
+      </div>
+      <div class="detail-field"><div class="detail-field-label">Descrição</div><div class="detail-field-value" id="detail-desc">—</div></div>
+      <div class="detail-field"><div class="detail-field-label">Aberto por / Data</div><div class="detail-field-value" id="detail-opener">—</div></div>
+      <div class="detail-field"><div class="detail-field-label">Histórico</div><div class="history-log" id="detail-log"></div></div>
+      <div class="form-group"><label>Adicionar Observação</label><textarea id="detail-note" placeholder="Registre uma atualização..."></textarea></div>
+    </div>
+    <div class="modal-footer" id="detail-actions"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-new-prev" onclick="closeOnOverlay(event,'modal-new-prev')">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Nova Preventiva</div><button class="modal-close" onclick="closeModal('modal-new-prev')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label>Nome da Manutenção</label><input type="text" id="prev-name" placeholder="Ex: Limpeza caixa d'água"></div>
+      <div class="form-row">
+        <div class="form-group"><label>Unidade</label><select id="prev-unit"><option value="moema">Fondue Moema</option><option value="tatuape">Fondue Tatuapé</option><option value="perdizes">Fondue Perdizes</option><option value="tomahawk">Tomahawk</option><option value="hamburgo">Hamburgo Fries</option><option value="escritorio">Escritório Central</option><option value="todas">Todas</option></select></div>
+        <div class="form-group"><label>Frequência</label><select id="prev-freq"><option>Semanal</option><option>Quinzenal</option><option selected>Mensal</option><option>Trimestral</option><option>Semestral</option><option>Anual</option></select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Próxima Data</label><input type="date" id="prev-date"></div>
+        <div class="form-group"><label>Responsável</label><input type="text" id="prev-resp" placeholder="Nome do técnico"></div>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modal-new-prev')">Cancelar</button><button class="btn btn-primary" onclick="createPreventiva()">Salvar</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-new-member" onclick="closeOnOverlay(event,'modal-new-member')">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Adicionar Técnico</div><button class="modal-close" onclick="closeModal('modal-new-member')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label>Nome</label><input type="text" id="member-name" placeholder="Nome completo"></div>
+        <div class="form-group"><label>Unidade Base</label><select id="member-unit"><option>Fondue Moema</option><option>Fondue Tatuapé</option><option>Fondue Perdizes</option><option>Tomahawk</option><option>Hamburgo Fries</option><option>Escritório Central</option><option>Todas</option></select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Especialidade</label><input type="text" id="member-spec" placeholder="Ex: Elétrica..."></div>
+        <div class="form-group"><label>Pode abrir chamados?</label><select id="member-perm"><option value="sim">Sim</option><option value="nao">Não</option></select></div>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modal-new-member')">Cancelar</button><button class="btn btn-primary" onclick="createMember()">Adicionar</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><span id="toast-icon">✅</span><span id="toast-msg">OK!</span></div>
+
+<script>
+// ════════════════════════════════════════════
+// ▼ COLE AQUI A URL DO APPS SCRIPT (passo 3)
+https://script.google.com/macros/s/AKfycbyT6lP820mY_7rI_n3H84J6BuU633kNkUP0ZXlygcgFs_-hw_jA6PNW7PX2Yl-ctB5N/exec
+// ════════════════════════════════════════════
+
+const UNITS={moema:'Fondue Moema',tatuape:'Fondue Tatuapé',perdizes:'Fondue Perdizes',tomahawk:'Tomahawk',hamburgo:'Hamburgo Fries',escritorio:'Escritório Central'};
+let currentUser=null,tickets=[],preventivas=[],equipe=[],currentFilter='todos';
+
+async function api(action,params={}){
+  const q=new URLSearchParams({action,...params});
+  const r=await fetch(SCRIPT_URL+'?'+q);
+  return r.json();
+}
+async function apiPost(action,data){
+  const r=await fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action,...data})});
+  return r.json();
+}
+
+async function doLogin(){
+  const user=document.getElementById('login-user').value.trim();
+  const pass=document.getElementById('login-pass').value.trim();
+  const btn=document.getElementById('login-btn');
+  const err=document.getElementById('login-error');
+  if(!user||!pass){err.textContent='Preencha usuário e senha.';return;}
+  btn.textContent='Entrando...';btn.disabled=true;err.textContent='';
+  try{
+    const r=await api('login',{user,pass});
+    if(r.ok){
+      currentUser=r.data;
+      document.getElementById('screen-login').style.display='none';
+      document.getElementById('screen-app').style.display='block';
+      document.getElementById('user-avatar').textContent=user.substring(0,2).toUpperCase();
+      document.getElementById('user-display').textContent=r.data.nome||user;
+      document.getElementById('user-role-display').textContent=r.data.perfil||'Usuário';
+      await syncAll();
+    }else{err.textContent='Usuário ou senha incorretos.';}
+  }catch(e){err.textContent='Erro de conexão. Verifique a URL do Script.';}
+  btn.textContent='Entrar';btn.disabled=false;
+}
+
+function doLogout(){
+  currentUser=null;
+  document.getElementById('screen-app').style.display='none';
+  document.getElementById('screen-login').style.display='flex';
+  document.getElementById('login-pass').value='';
+}
+
+async function syncAll(){
+  const btn=document.getElementById('btn-sync');
+  btn.textContent='↻ Sincronizando...';btn.disabled=true;
+  try{
+    const[t,p,e]=await Promise.all([api('getTickets'),api('getPreventivas'),api('getEquipe')]);
+    tickets=t.data||[];preventivas=p.data||[];equipe=e.data||[];
+    renderDashboard();renderTickets();renderPreventivas();renderHistorico();renderEquipe();
+    showToast('Sincronizado!','↻');
+  }catch(e){showToast('Erro ao sincronizar.','⚠️');}
+  btn.textContent='↻ Sincronizar';btn.disabled=false;
+}
+
+function showPage(id,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  if(btn)btn.classList.add('active');
+  document.getElementById('topbar-title').textContent={dashboard:'Dashboard',chamados:'Chamados',preventivas:'Preventivas',historico:'Histórico',equipe:'Equipe'}[id]||id;
+}
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+function closeOnOverlay(e,id){if(e.target.id===id)closeModal(id);}
+function showToast(msg,icon='✅'){
+  const t=document.getElementById('toast');
+  document.getElementById('toast-msg').textContent=msg;
+  document.getElementById('toast-icon').textContent=icon;
+  t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);
+}
+function pBadge(p){return{urgente:'<span class="badge badge-urgent">Urgente</span>',medio:'<span class="badge badge-medium">Médio</span>',baixo:'<span class="badge badge-low">Baixo</span>'}[p]||p;}
+function sBadge(s){return{aberto:'<span class="badge badge-open">Aberto</span>',aguardando:'<span class="badge badge-waiting">Ag. Aprovação</span>',em_andamento:'<span class="badge badge-progress">Em Andamento</span>',concluido:'<span class="badge badge-done">Concluído</span>',cancelado:'<span class="badge badge-waiting">Cancelado</span>'}[s]||s;}
+function uTag(u){return`<span class="unit-tag">${UNITS[u]||u}</span>`;}
+function nowStr(){const d=new Date();return`${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;}
+
+function renderDashboard(){
+  const open=tickets.filter(t=>t.status!=='concluido'&&t.status!=='cancelado');
+  const urgent=open.filter(t=>t.priority==='urgente');
+  const m=new Date().getMonth()+1;
+  const done=tickets.filter(t=>t.status==='concluido'&&String(t.date||'').includes('/'+String(m).padStart(2,'0')+'/'));
+  const prevSoon=preventivas.filter(p=>Number(p.progress||0)>=80);
+  document.getElementById('stat-urgent').textContent=urgent.length;
+  document.getElementById('stat-open').textContent=open.length;
+  document.getElementById('stat-done').textContent=done.length;
+  document.getElementById('stat-prev-soon').textContent=prevSoon.length;
+  document.getElementById('badge-abertos').textContent=open.length;
+  const tbU=document.getElementById('tb-urgent');
+  tbU.innerHTML=urgent.length===0?`<tr><td colspan="3" style="text-align:center;color:var(--text-dim);padding:24px">Nenhum urgente 🎉</td></tr>`:urgent.map(t=>`<tr onclick="openDetail(${tickets.indexOf(t)})"><td><div class="ticket-title">${t.title}</div><div class="ticket-desc">${t.id}</div></td><td>${uTag(t.unit)}</td><td>${sBadge(t.status)}</td></tr>`).join('');
+  const pd=document.getElementById('prev-dash');
+  pd.innerHTML=prevSoon.length===0?`<div class="table-wrap"><div class="empty"><div class="empty-icon">✅</div><div class="empty-text">Nenhuma preventiva próxima</div></div></div>`:prevSoon.slice(0,3).map(p=>`<div class="prev-card" style="margin-bottom:10px"><div class="prev-card-header"><div><div class="prev-card-title">${p.name}</div><div class="prev-card-unit">${UNITS[p.unit]||p.unit} · ${p.freq}</div></div><span class="badge ${Number(p.progress)>=95?'badge-urgent':'badge-medium'}">${Number(p.progress)>=95?'Urgente':'Próxima'}</span></div><div class="prev-bar-wrap"><div class="prev-bar ${Number(p.progress)>=95?'overdue':''}" style="width:${p.progress}%"></div></div><div class="prev-meta"><span>${p.resp}</span><span>${p.nextDate}</span></div></div>`).join('');
+  document.getElementById('approval-banner').style.display=open.filter(t=>t.status==='aguardando').length>0?'flex':'none';
+}
+
+function renderTickets(filter){
+  if(filter!==undefined)currentFilter=filter;
+  const f=currentFilter;
+  let list=tickets.filter(t=>t.status!=='concluido'&&t.status!=='cancelado');
+  if(['urgente','medio','baixo'].includes(f))list=list.filter(t=>t.priority===f);
+  else if(['aberto','em_andamento','aguardando'].includes(f))list=list.filter(t=>t.status===f);
+  else if(Object.keys(UNITS).includes(f))list=list.filter(t=>t.unit===f);
+  document.getElementById('approval-banner').style.display=tickets.filter(t=>t.status==='aguardando').length>0?'flex':'none';
+  const tb=document.getElementById('tb-chamados');
+  if(!list.length){tb.innerHTML=`<tr><td colspan="7"><div class="empty"><div class="empty-icon">📭</div><div class="empty-text">Nenhum chamado</div></div></td></tr>`;return;}
+  tb.innerHTML=list.map(t=>{
+    const idx=tickets.indexOf(t);
+    return`<tr onclick="openDetail(${idx})"><td class="ticket-id">${t.id}</td><td><div class="ticket-title">${t.title}</div><div class="ticket-desc">${t.category}</div></td><td>${uTag(t.unit)}</td><td>${pBadge(t.priority)}</td><td>${sBadge(t.status)}</td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted)">${(t.date||'').split(' ')[0]}</td><td onclick="event.stopPropagation()"><div style="display:flex;gap:6px">${t.status==='aguardando'?`<button class="btn btn-success btn-sm" onclick="changeStatus(${idx},'em_andamento','Aprovado e iniciado')">Aprovar</button>`:''}${t.status==='aberto'?`<button class="btn btn-ghost btn-sm" onclick="changeStatus(${idx},'em_andamento','Execução iniciada')">Iniciar</button>`:''}${t.status==='em_andamento'?`<button class="btn btn-primary btn-sm" onclick="changeStatus(${idx},'concluido','Chamado concluído')">Concluir</button>`:''}</div></td></tr>`;
+  }).join('');
+}
+
+function filterTickets(f,btn){
+  currentFilter=f;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  renderTickets();
+}
+
+function openDetail(idx){
+  const t=tickets[idx];if(!t)return;
+  document.getElementById('detail-title').textContent=t.title;
+  document.getElementById('detail-id').textContent=t.id+' · '+t.date;
+  document.getElementById('detail-unit').textContent=UNITS[t.unit]||t.unit;
+  document.getElementById('detail-priority').innerHTML=pBadge(t.priority);
+  document.getElementById('detail-status').innerHTML=sBadge(t.status);
+  document.getElementById('detail-category').textContent=t.category;
+  document.getElementById('detail-desc').textContent=t.desc;
+  document.getElementById('detail-opener').textContent=t.opener;
+  const log=JSON.parse(t.log||'[]');
+  document.getElementById('detail-log').innerHTML=log.map(l=>`<div class="log-entry"><span class="log-time">${l.time}</span><span class="log-text">${l.text}</span></div>`).join('');
+  const acts=document.getElementById('detail-actions');
+  acts.innerHTML=`<button class="btn btn-ghost" onclick="closeModal('modal-detail')">Fechar</button>`;
+  if(t.status==='aguardando')acts.innerHTML+=`<button class="btn btn-success" onclick="changeStatus(${idx},'em_andamento','Aprovado pelo Sérgio');closeModal('modal-detail')">✅ Aprovar</button>`;
+  if(t.status==='aberto')acts.innerHTML+=`<button class="btn btn-primary" onclick="changeStatus(${idx},'em_andamento','Execução iniciada');closeModal('modal-detail')">🔧 Iniciar</button>`;
+  if(t.status==='em_andamento')acts.innerHTML+=`<button class="btn btn-success" onclick="changeStatus(${idx},'concluido','Chamado concluído');closeModal('modal-detail')">✔ Concluir</button>`;
+  acts.innerHTML+=`<button class="btn btn-primary" onclick="addNote(${idx})">💬 Obs.</button>`;
+  openModal('modal-detail');
+}
+
+async function changeStatus(idx,newStatus,logText){
+  const t=tickets[idx];
+  const log=JSON.parse(t.log||'[]');
+  log.push({time:nowStr(),text:logText});
+  t.status=newStatus;t.log=JSON.stringify(log);
+  renderDashboard();renderTickets();renderHistorico();
+  showToast(logText+'!',newStatus==='concluido'?'🎉':'🔧');
+  try{await apiPost('updateTicket',{id:t.id,status:newStatus,log:t.log});}catch(e){}
+}
+
+async function addNote(idx){
+  const note=document.getElementById('detail-note').value.trim();
+  if(!note){showToast('Digite uma observação.','⚠️');return;}
+  const t=tickets[idx];
+  const log=JSON.parse(t.log||'[]');
+  log.push({time:nowStr(),text:note});
+  t.log=JSON.stringify(log);
+  document.getElementById('detail-note').value='';
+  document.getElementById('detail-log').innerHTML=log.map(l=>`<div class="log-entry"><span class="log-time">${l.time}</span><span class="log-text">${l.text}</span></div>`).join('');
+  showToast('Observação registrada!','💬');
+  try{await apiPost('updateTicket',{id:t.id,log:t.log});}catch(e){}
+}
+
+async function createTicket(){
+  const title=document.getElementById('new-title').value.trim();
+  const desc=document.getElementById('new-desc').value.trim();
+  const opener=document.getElementById('new-opener').value.trim()||'Anônimo';
+  const unit=document.getElementById('new-unit').value;
+  const priority=document.getElementById('new-priority').value;
+  const category=document.getElementById('new-category').value;
+  if(!title){showToast('Preencha o equipamento/local.','⚠️');return;}
+  const id='TKT-'+String(tickets.length+1).padStart(3,'0');
+  const d=new Date();
+  const date=`${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear()} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
+  const status=priority==='urgente'?'aberto':'aguardando';
+  const log=JSON.stringify([{time:nowStr(),text:`Chamado aberto por ${opener}`}]);
+  const t={id,title,desc,unit,priority,status,category,opener,date,log};
+  tickets.unshift(t);
+  closeModal('modal-new');
+  ['new-title','new-desc','new-opener'].forEach(i=>document.getElementById(i).value='');
+  renderDashboard();renderTickets();
+  showToast(`Chamado ${id} aberto!`,'🎫');
+  try{await apiPost('addTicket',t);}catch(e){showToast('Salvo local. Sincronize depois.','⚠️');}
+}
+
+function renderPreventivas(){
+  const grid=document.getElementById('prev-grid');
+  if(!preventivas.length){grid.innerHTML=`<div style="grid-column:1/-1"><div class="empty"><div class="empty-icon">🗓</div><div class="empty-text">Nenhuma preventiva cadastrada</div></div></div>`;return;}
+  grid.innerHTML=preventivas.map(p=>`<div class="prev-card"><div class="prev-card-header"><div><div class="prev-card-title">${p.name}</div><div class="prev-card-unit">${UNITS[p.unit]||p.unit} · ${p.freq}</div></div><span class="badge ${Number(p.progress||0)>=95?'badge-urgent':Number(p.progress||0)>=80?'badge-medium':'badge-low'}">${Number(p.progress||0)>=95?'Urgente':Number(p.progress||0)>=80?'Próximo':'OK'}</span></div><div class="prev-bar-wrap"><div class="prev-bar ${Number(p.progress||0)>=95?'overdue':''}" style="width:${p.progress||0}%"></div></div><div class="prev-meta"><span>Resp: ${p.resp}</span><span>Próx: ${p.nextDate}</span></div></div>`).join('');
+}
+
+async function createPreventiva(){
+  const name=document.getElementById('prev-name').value.trim();
+  if(!name){showToast('Preencha o nome.','⚠️');return;}
+  const p={name,unit:document.getElementById('prev-unit').value,freq:document.getElementById('prev-freq').value,nextDate:document.getElementById('prev-date').value,resp:document.getElementById('prev-resp').value||'—',progress:0};
+  preventivas.push(p);closeModal('modal-new-prev');renderPreventivas();
+  showToast('Preventiva criada!','🗓');
+  try{await apiPost('addPreventiva',p);}catch(e){}
+}
+
+function renderHistorico(){
+  const done=tickets.filter(t=>t.status==='concluido');
+  const tb=document.getElementById('tb-historico');
+  if(!done.length){tb.innerHTML=`<tr><td colspan="6"><div class="empty"><div class="empty-icon">📋</div><div class="empty-text">Nenhum concluído ainda</div></div></td></tr>`;return;}
+  tb.innerHTML=done.map(t=>`<tr><td class="ticket-id">${t.id}</td><td><div class="ticket-title">${t.title}</div><div class="ticket-desc">${(t.desc||'').substring(0,60)}...</div></td><td>${uTag(t.unit)}</td><td>${pBadge(t.priority)}</td><td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted)">${t.date||'—'}</td><td style="color:var(--text-muted)">${t.opener||'—'}</td></tr>`).join('');
+}
+
+function renderEquipe(){
+  const tb=document.getElementById('tb-equipe');
+  if(!equipe.length){tb.innerHTML=`<tr><td colspan="4"><div class="empty"><div class="empty-icon">👥</div><div class="empty-text">Nenhum técnico</div></div></td></tr>`;return;}
+  tb.innerHTML=equipe.map(m=>`<tr><td><div style="display:flex;align-items:center;gap:10px"><div class="avatar" style="width:28px;height:28px;font-size:11px">${(m.nome||'').split(' ').map(x=>x[0]).slice(0,2).join('')}</div><div><div style="font-weight:500">${m.nome}</div><div style="font-size:11px;color:var(--text-muted)">${m.perfil||'Técnico'}</div></div></div></td><td style="color:var(--text-muted)">${m.especialidade||'—'}</td><td>${m.unidade||'—'}</td><td>${m.podeAbrir==='sim'?'<span class="badge badge-done">Sim</span>':'<span class="badge badge-waiting">Não</span>'}</td></tr>`).join('');
+}
+
+async function createMember(){
+  const nome=document.getElementById('member-name').value.trim();
+  if(!nome){showToast('Preencha o nome.','⚠️');return;}
+  const m={nome,especialidade:document.getElementById('member-spec').value||'—',unidade:document.getElementById('member-unit').value,podeAbrir:document.getElementById('member-perm').value,perfil:'Técnico'};
+  equipe.push(m);closeModal('modal-new-member');renderEquipe();
+  showToast('Técnico adicionado!','👥');
+  try{await apiPost('addMembro',m);}catch(e){}
+}
+
+window.addEventListener('load',()=>{
+  document.getElementById('loading-overlay').style.display='none';
+  document.getElementById('screen-login').style.display='flex';
+});
+</script>
+</body>
+</html>
