@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SSAS — Sistema Sander</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Space+Grotesk:wght@300;400;500;600&display=swap');
+
+  :root {
+    --bg:        #0a0a0c;
+    --bg2:       #111115;
+    --bg3:       #18181e;
+    --bg4:       #1f1f28;
+    --border:    #2a2a35;
+    --border2:   #3a3a48;
+    --text:      #e8e8f0;
+    --text2:     #9090a8;
+    --text3:     #5a5a70;
+    --accent:    #4f8ef7;
+    --accent2:   #2563c4;
+    --red:       #e85555;
+    --red2:      #c03030;
+    --amber:     #f0a030;
+    --amber2:    #b87820;
+    --green:     #40c870;
+    --green2:    #289050;
+    --purple:    #a070f0;
+    --mono:      'JetBrains Mono', monospace;
+    --sans:      'Space Grotesk', sans-serif;
+    --radius:    6px;
+    --sidebar:   220px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    font-size: 14px;
+  }
+
+  /* ── LOADING ── */
+  #loading {
+    position: fixed; inset: 0; background: var(--bg);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 999; gap: 16px;
+  }
+  #loading .logo-load { font-family: var(--mono); font-size: 11px; color: var(--text3); letter-spacing: .2em; }
+  #loading .title-load { font-family: var(--mono); font-size: 22px; color: var(--accent); letter-spacing: .1em; }
+  .bar-track { width: 200px; height: 2px; background: var(--border); border-radius: 1px; overflow: hidden; }
+  .bar-fill { height: 100%; background: var(--accent); width: 0; animation: load 1.4s ease forwards; }
+  @keyframes load { to { width: 100%; } }
+
+  /* ── LOGIN ── */
+  #login {
+    display: none; position: fixed; inset: 0; background: var(--bg);
+    align-items: center; justify-content: center; flex-direction: column; gap: 32px;
+  }
+  .login-box {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 40px 36px; width: 320px; display: flex; flex-direction: column; gap: 20px;
+  }
+  .login-logo { font-family: var(--mono); color: var(--accent); font-size: 20px; letter-spacing: .08em; text-align: center; }
+  .login-sub { font-size: 12px; color: var(--text3); text-align: center; font-family: var(--mono); }
+  .login-box label { font-size: 11px; color: var(--text2); letter-spacing: .06em; text-transform: uppercase; display: block; margin-bottom: 5px; }
+  .login-box input {
+    width: 100%; background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius);
+    color: var(--text); font-family: var(--mono); font-size: 13px; padding: 9px 12px; outline: none;
+    transition: border-color .2s;
+  }
+  .login-box input:focus { border-color: var(--accent); }
+  .btn-login {
+    background: var(--accent); color: #fff; border: none; border-radius: var(--radius);
+    font-family: var(--sans); font-size: 13px; font-weight: 500; padding: 10px;
+    cursor: pointer; transition: background .2s; letter-spacing: .04em;
+  }
+  .btn-login:hover { background: var(--accent2); }
+  #login-err { font-size: 12px; color: var(--red); text-align: center; min-height: 16px; font-family: var(--mono); }
+
+  /* ── APP SHELL ── */
+  #app { display: none; width: 100%; }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: var(--sidebar); background: var(--bg2); border-right: 1px solid var(--border);
+    position: fixed; top: 0; left: 0; bottom: 0; display: flex; flex-direction: column;
+    padding: 20px 0; z-index: 50;
+  }
+  .sidebar-logo {
+    padding: 0 20px 20px; border-bottom: 1px solid var(--border);
+    font-family: var(--mono); color: var(--accent); font-size: 16px; letter-spacing: .06em;
+  }
+  .sidebar-logo span { display: block; font-size: 10px; color: var(--text3); margin-top: 3px; letter-spacing: .08em; }
+  .nav { flex: 1; padding: 16px 0; }
+  .nav-group { padding: 0 12px; margin-bottom: 4px; }
+  .nav-label { font-size: 9px; color: var(--text3); letter-spacing: .12em; text-transform: uppercase; padding: 8px 8px 4px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px; padding: 8px 10px;
+    border-radius: var(--radius); cursor: pointer; font-size: 13px; color: var(--text2);
+    transition: all .15s; position: relative;
+  }
+  .nav-item:hover { background: var(--bg3); color: var(--text); }
+  .nav-item.active { background: var(--bg3); color: var(--accent); border-left: 2px solid var(--accent); padding-left: 8px; }
+  .nav-item .badge {
+    margin-left: auto; background: var(--red); color: #fff;
+    font-size: 10px; font-family: var(--mono); padding: 1px 6px; border-radius: 10px; min-width: 18px; text-align: center;
+  }
+  .nav-item .badge.amber { background: var(--amber2); }
+  .sidebar-footer { padding: 16px 20px; border-top: 1px solid var(--border); }
+  .user-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .user-avatar {
+    width: 28px; height: 28px; border-radius: 50%; background: var(--accent2);
+    display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: #fff; flex-shrink: 0;
+  }
+  .user-name { font-size: 12px; color: var(--text2); font-family: var(--mono); }
+  .btn-sair {
+    width: 100%; background: transparent; border: 1px solid var(--border); color: var(--text3);
+    border-radius: var(--radius); padding: 7px; font-size: 12px; cursor: pointer;
+    font-family: var(--mono); transition: all .2s; letter-spacing: .04em;
+  }
+  .btn-sair:hover { border-color: var(--red); color: var(--red); }
+
+  /* ── MAIN ── */
+  .main { margin-left: var(--sidebar); flex: 1; min-height: 100vh; display: flex; flex-direction: column; }
+  .topbar {
+    background: var(--bg2); border-bottom: 1px solid var(--border);
+    padding: 14px 28px; display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 40;
+  }
+  .topbar-title { font-size: 15px; font-weight: 500; letter-spacing: .02em; }
+  .topbar-sub { font-size: 11px; color: var(--text3); font-family: var(--mono); margin-top: 1px; }
+  .topbar-actions { display: flex; gap: 8px; align-items: center; }
+  .content { padding: 28px; flex: 1; }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 14px; border-radius: var(--radius); font-family: var(--sans);
+    font-size: 12px; font-weight: 500; cursor: pointer; border: 1px solid var(--border);
+    background: var(--bg3); color: var(--text2); transition: all .15s; letter-spacing: .02em;
+  }
+  .btn:hover { background: var(--bg4); color: var(--text); border-color: var(--border2); }
+  .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-primary:hover { background: var(--accent2); border-color: var(--accent2); }
+  .btn-green { background: var(--green2); color: #fff; border-color: var(--green2); }
+  .btn-green:hover { background: #1a6e38; border-color: #1a6e38; }
+  .btn-red { background: var(--red2); color: #fff; border-color: var(--red2); }
+  .btn-red:hover { background: #962020; }
+  .btn-sm { padding: 5px 10px; font-size: 11px; }
+
+  /* ── METRICS ── */
+  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+  .metric-card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px 18px; transition: border-color .2s;
+  }
+  .metric-card:hover { border-color: var(--border2); }
+  .metric-label { font-size: 10px; color: var(--text3); letter-spacing: .1em; text-transform: uppercase; font-family: var(--mono); margin-bottom: 8px; }
+  .metric-value { font-size: 26px; font-weight: 600; font-family: var(--mono); line-height: 1; }
+  .metric-sub { font-size: 11px; color: var(--text3); margin-top: 5px; font-family: var(--mono); }
+  .mv-blue { color: var(--accent); }
+  .mv-red { color: var(--red); }
+  .mv-amber { color: var(--amber); }
+  .mv-green { color: var(--green); }
+
+  /* ── EMPRESA TABS ── */
+  .empresa-tabs { display: flex; gap: 4px; margin-bottom: 20px; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 3px; width: fit-content; }
+  .etab {
+    padding: 6px 14px; border-radius: 4px; font-size: 12px; cursor: pointer;
+    color: var(--text3); background: transparent; border: none; font-family: var(--sans); transition: all .15s;
+  }
+  .etab:hover { color: var(--text2); }
+  .etab.active { background: var(--bg4); color: var(--text); border: 1px solid var(--border2); }
+  .etab.active.fondue { color: var(--amber); }
+  .etab.active.tomahawk { color: var(--red); }
+  .etab.active.hamburgo { color: var(--green); }
+
+  /* ── FILTER ROW ── */
+  .filter-row { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+  .fbtn {
+    padding: 4px 12px; border-radius: 20px; font-size: 11px; cursor: pointer;
+    border: 1px solid var(--border); background: transparent; color: var(--text3);
+    font-family: var(--mono); transition: all .15s;
+  }
+  .fbtn:hover { border-color: var(--border2); color: var(--text2); }
+  .fbtn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  /* ── ACAO CARD ── */
+  .acao-card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 18px 20px; margin-bottom: 10px; transition: border-color .2s;
+  }
+  .acao-card:hover { border-color: var(--border2); }
+  .acao-card.exec { border-left: 3px solid var(--red); }
+  .acao-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .acao-nome { font-size: 14px; font-weight: 500; }
+  .acao-cargo { font-weight: 300; color: var(--text3); }
+  .acao-num { font-family: var(--mono); font-size: 11px; color: var(--text3); margin-top: 3px; }
+  .badges { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+  .badge-pill {
+    font-family: var(--mono); font-size: 10px; padding: 3px 8px; border-radius: 20px;
+    border: 1px solid; letter-spacing: .04em;
+  }
+  .bp-blue { background: rgba(79,142,247,.12); color: #7aabff; border-color: rgba(79,142,247,.3); }
+  .bp-amber { background: rgba(240,160,48,.12); color: #f0b050; border-color: rgba(240,160,48,.3); }
+  .bp-red { background: rgba(232,85,85,.12); color: #f07070; border-color: rgba(232,85,85,.3); }
+  .bp-green { background: rgba(64,200,112,.12); color: #50e080; border-color: rgba(64,200,112,.3); }
+  .bp-gray { background: rgba(144,144,168,.1); color: var(--text3); border-color: var(--border); }
+  .bp-fondue { background: rgba(240,160,48,.12); color: #f0b050; border-color: rgba(240,160,48,.25); }
+  .bp-tomahawk { background: rgba(232,85,85,.12); color: #f07070; border-color: rgba(232,85,85,.25); }
+  .bp-hamburgo { background: rgba(64,200,112,.12); color: #50e080; border-color: rgba(64,200,112,.25); }
+  .acao-meta {
+    display: flex; gap: 16px; margin-top: 10px; font-size: 11px;
+    color: var(--text3); font-family: var(--mono); flex-wrap: wrap;
+  }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 12px 0; }
+  .ai-header { font-size: 10px; color: var(--accent); letter-spacing: .1em; text-transform: uppercase; font-family: var(--mono); margin-bottom: 6px; }
+  .risk-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .risk-track { flex: 1; height: 4px; background: var(--bg4); border-radius: 2px; overflow: hidden; }
+  .risk-fill { height: 100%; border-radius: 2px; transition: width .6s ease; }
+  .risk-pct { font-family: var(--mono); font-size: 12px; font-weight: 500; min-width: 32px; text-align: right; }
+  .ai-text {
+    background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 10px 14px; font-size: 12px; color: var(--text2); line-height: 1.7; font-family: var(--mono);
+  }
+  .acao-actions { display: flex; gap: 6px; margin-top: 12px; justify-content: flex-end; }
+
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    text-align: center; padding: 60px 20px;
+    border: 1px dashed var(--border2); border-radius: 8px; background: var(--bg2);
+  }
+  .empty-icon { font-size: 36px; margin-bottom: 12px; }
+  .empty-title { font-size: 15px; font-weight: 500; margin-bottom: 8px; }
+  .empty-sub { font-size: 12px; color: var(--text3); font-family: var(--mono); line-height: 1.7; margin-bottom: 20px; }
+
+  /* ── PJe SECTION ── */
+  .pje-box {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 16px;
+  }
+  .pje-step { display: flex; gap: 12px; margin-bottom: 16px; }
+  .step-num {
+    width: 22px; height: 22px; border-radius: 50%; background: var(--accent2);
+    color: #fff; font-size: 11px; font-family: var(--mono); font-weight: 600;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px;
+  }
+  .step-body { flex: 1; }
+  .step-title { font-size: 13px; font-weight: 500; margin-bottom: 4px; }
+  .step-sub { font-size: 11px; color: var(--text3); font-family: var(--mono); line-height: 1.6; }
+  .paste-area {
+    width: 100%; min-height: 90px; background: var(--bg3); border: 1px solid var(--border);
+    border-radius: var(--radius); color: var(--text); font-family: var(--mono); font-size: 11px;
+    padding: 10px 12px; resize: vertical; outline: none; margin-top: 8px; transition: border-color .2s;
+  }
+  .paste-area:focus { border-color: var(--accent); }
+  .alert { border-radius: var(--radius); padding: 10px 14px; font-size: 12px; font-family: var(--mono); margin-top: 10px; }
+  .alert-blue { background: rgba(79,142,247,.1); color: #7aabff; border: 1px solid rgba(79,142,247,.25); }
+  .alert-amber { background: rgba(240,160,48,.1); color: #f0b050; border: 1px solid rgba(240,160,48,.25); }
+  .alert-green { background: rgba(64,200,112,.1); color: #50e080; border: 1px solid rgba(64,200,112,.25); }
+
+  /* ── PROVISÃO ── */
+  .prov-total {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 20px 24px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;
+  }
+  .prov-label { font-size: 11px; color: var(--text3); letter-spacing: .08em; text-transform: uppercase; font-family: var(--mono); margin-bottom: 6px; }
+  .prov-value { font-size: 28px; font-weight: 600; font-family: var(--mono); color: var(--red); }
+  .prov-sub { font-size: 11px; color: var(--text3); font-family: var(--mono); margin-top: 4px; }
+  .prov-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 12px;
+  }
+  .prov-row:last-child { border-bottom: none; }
+  .prov-empresa { font-weight: 500; margin-bottom: 2px; }
+  .prov-detail { font-size: 11px; color: var(--text3); font-family: var(--mono); }
+  .prov-amount { font-family: var(--mono); font-weight: 600; color: var(--red); flex-shrink: 0; margin-left: 12px; }
+
+  /* ── MODAL ── */
+  .modal-bg {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7);
+    z-index: 200; align-items: center; justify-content: center;
+  }
+  .modal-bg.open { display: flex; }
+  .modal {
+    background: var(--bg2); border: 1px solid var(--border2); border-radius: 10px;
+    padding: 28px; width: 94%; max-width: 560px; max-height: 90vh; overflow-y: auto;
+  }
+  .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .modal-title { font-size: 15px; font-weight: 500; }
+  .close-btn { background: none; border: none; color: var(--text3); font-size: 18px; cursor: pointer; line-height: 1; }
+  .close-btn:hover { color: var(--text); }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  .form-grid label { font-size: 10px; color: var(--text3); letter-spacing: .08em; text-transform: uppercase; font-family: var(--mono); display: block; margin-bottom: 5px; }
+  .form-grid input, .form-grid select, .form-grid textarea {
+    width: 100%; background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius);
+    color: var(--text); font-family: var(--mono); font-size: 12px; padding: 8px 10px; outline: none; transition: border-color .2s;
+  }
+  .form-grid input:focus, .form-grid select:focus, .form-grid textarea:focus { border-color: var(--accent); }
+  .form-grid select option { background: var(--bg3); }
+  .form-grid textarea { resize: vertical; min-height: 70px; }
+  .full { grid-column: 1 / -1; }
+  .modal-footer { display: flex; gap: 8px; justify-content: flex-end; }
+
+  /* ── PRAZOS ── */
+  .prazo-card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px 20px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    transition: border-color .2s;
+  }
+  .prazo-card.urgente { border-left: 3px solid var(--red); }
+  .prazo-dias { font-family: var(--mono); font-size: 24px; font-weight: 600; flex-shrink: 0; text-align: right; }
+  .prazo-nome { font-size: 14px; font-weight: 500; }
+  .prazo-sub { font-size: 11px; color: var(--text3); font-family: var(--mono); margin-top: 3px; }
+  .urgente-tag { font-size: 10px; color: var(--red); font-family: var(--mono); background: rgba(232,85,85,.1); border: 1px solid rgba(232,85,85,.25); border-radius: 4px; padding: 3px 8px; margin-top: 6px; display: inline-block; }
+
+  /* ── TOAST ── */
+  #toast {
+    position: fixed; bottom: 28px; right: 28px; background: var(--bg3);
+    border: 1px solid var(--border2); border-radius: var(--radius); padding: 12px 18px;
+    font-size: 12px; font-family: var(--mono); color: var(--text);
+    transform: translateY(60px); opacity: 0; transition: all .3s; z-index: 999; pointer-events: none;
+  }
+  #toast.show { transform: translateY(0); opacity: 1; }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  @media (max-width: 768px) {
+    :root { --sidebar: 0px; }
+    .sidebar { display: none; }
+    .metrics { grid-template-columns: 1fr 1fr; }
+    .content { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="loading">
+  <div class="logo-load">GRUPO HANNOVER</div>
+  <div class="title-load">SSAS</div>
+  <div class="bar-track"><div class="bar-fill"></div></div>
+  <div class="logo-load" style="margin-top:4px">CARREGANDO SISTEMA...</div>
+</div>
+
+<!-- LOGIN -->
+<div id="login" style="display:none;position:fixed;inset:0;background:var(--bg);align-items:center;justify-content:center;flex-direction:column;gap:24px;">
+  <div class="login-box">
+    <div class="login-logo">SSAS</div>
+    <div class="login-sub">Ações Trabalhistas<br>Grupo Hannover</div>
+    <div>
+      <label>Usuário</label>
+      <input id="l-user" type="text" autocomplete="username" onkeydown="if(event.key==='Enter')logar()">
+    </div>
+    <div>
+      <label>Senha</label>
+      <input id="l-pass" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')logar()">
+    </div>
+    <button class="btn-login" onclick="logar()">Entrar</button>
+    <div id="login-err"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="sidebar-logo">SSAS<span>Sistema Sander — Hannover Group</span></div>
+    <div class="nav">
+      <div class="nav-group">
+        <div class="nav-label">Principal</div>
+        <div class="nav-item active" onclick="setView('dashboard',this)">⬡ Dashboard</div>
+        <div class="nav-item" onclick="setView('acoes',this)" id="nav-acoes">
+          📋 Ações
+          <span class="badge" id="badge-acoes">0</span>
+        </div>
+        <div class="nav-item" onclick="setView('pje',this)">🔍 Buscar PJe</div>
+        <div class="nav-item" onclick="setView('prazos',this)" id="nav-prazos">
+          📅 Prazos
+          <span class="badge amber" id="badge-prazos">0</span>
+        </div>
+      </div>
+      <div class="nav-group">
+        <div class="nav-label">Financeiro</div>
+        <div class="nav-item" onclick="setView('provisao',this)">💰 Provisão CPC 25</div>
+      </div>
+    </div>
+    <div class="sidebar-footer">
+      <div class="user-row">
+        <div class="user-avatar" id="user-avatar">—</div>
+        <div class="user-name" id="user-name">—</div>
+      </div>
+      <button class="btn-sair" onclick="sair()">↩ Sair</button>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title" id="topbar-title">Dashboard</div>
+        <div class="topbar-sub" id="topbar-sub">Hannover Fondue · Hannover Tomahawk · Hamburgo Fries</div>
+      </div>
+      <div class="topbar-actions" id="topbar-actions"></div>
+    </div>
+    <div class="content" id="content"></div>
+  </div>
+</div>
+
+<!-- MODAL CADASTRO MANUAL -->
+<div class="modal-bg" id="modal-manual">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Cadastrar ação trabalhista</span>
+      <button class="close-btn" onclick="closeModals()">✕</button>
+    </div>
+    <div class="form-grid">
+      <div class="full">
+        <label>Empresa / Unidade</label>
+        <select id="f-empresa">
+          <option value="fondue-moema">Hannover Fondue — Moema</option>
+          <option value="fondue-tatuape">Hannover Fondue — Tatuapé</option>
+          <option value="fondue-perdizes">Hannover Fondue — Perdizes</option>
+          <option value="tomahawk">Hannover Tomahawk — Tatuapé</option>
+          <option value="hamburgo">Hamburgo Fries (dark kitchen)</option>
+        </select>
+      </div>
+      <div>
+        <label>Nº do processo</label>
+        <input id="f-num" placeholder="0000000-00.0000.5.02.0000">
+      </div>
+      <div>
+        <label>Data distribuição</label>
+        <input id="f-data" type="date">
+      </div>
+      <div>
+        <label>Reclamante</label>
+        <input id="f-nome" placeholder="Nome completo">
+      </div>
+      <div>
+        <label>Cargo anterior</label>
+        <input id="f-cargo" placeholder="Ex: Garçom, Churrasqueiro">
+      </div>
+      <div>
+        <label>Valor da causa (R$)</label>
+        <input id="f-valor" type="number" placeholder="0">
+      </div>
+      <div>
+        <label>Fase processual</label>
+        <select id="f-fase">
+          <option>Inicial</option><option>Instrução</option>
+          <option>Sentença</option><option>Recurso</option><option>Execução</option>
+        </select>
+      </div>
+      <div>
+        <label>Próximo prazo</label>
+        <input id="f-prazo" type="date">
+      </div>
+      <div>
+        <label>Advogado responsável</label>
+        <input id="f-adv" placeholder="Dr(a). Nome">
+      </div>
+      <div class="full">
+        <label>Pedidos principais (separados por vírgula)</label>
+        <input id="f-pedidos" placeholder="Horas extras, FGTS, Adicional noturno, Danos morais...">
+      </div>
+      <div class="full">
+        <label>Observações / contexto</label>
+        <textarea id="f-obs" placeholder="Histórico do colaborador, contexto do desligamento..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModals()">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarManual()">Salvar + Analisar IA ↗</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────
+const EMPRESAS = {
+  'fondue-moema':    { label:'Fondue Moema',    grupo:'fondue',    badge:'bp-fondue',    badgeEmp:'bp-fondue' },
+  'fondue-tatuape':  { label:'Fondue Tatuapé',  grupo:'fondue',    badge:'bp-fondue',    badgeEmp:'bp-fondue' },
+  'fondue-perdizes': { label:'Fondue Perdizes',  grupo:'fondue',    badge:'bp-fondue',    badgeEmp:'bp-fondue' },
+  'tomahawk':        { label:'Tomahawk',         grupo:'tomahawk',  badge:'bp-tomahawk',  badgeEmp:'bp-tomahawk' },
+  'hamburgo':        { label:'Hamburgo Fries',   grupo:'hamburgo',  badge:'bp-hamburgo',  badgeEmp:'bp-hamburgo' },
+};
+const EMPRESA_CTX = {
+  'fondue-moema':    'Hannover Fondue Moema (Av. Cotovia 445), restaurante de fondue rodízio noturno, SP, desde 1985.',
+  'fondue-tatuape':  'Hannover Fondue Tatuapé (R. Itapura 880), restaurante de fondue rodízio noturno.',
+  'fondue-perdizes': 'Hannover Fondue Perdizes (R. Cardoso de Almeida 1301), restaurante de fondue rodízio noturno.',
+  'tomahawk':        'Hannover Tomahawk (R. Itapura 875, Tatuapé), steakhouse premium, cortes tomahawk, operação noturna.',
+  'hamburgo':        'Hamburgo Fries, dark kitchen sem salão físico, delivery exclusivo via iFood em São Paulo.',
+};
+const FASE_BADGE = { 'Inicial':'bp-blue','Instrução':'bp-amber','Sentença':'bp-amber','Recurso':'bp-amber','Execução':'bp-red' };
+
+const USERS = { 'admin': 'hannover2025', 'juridico': 'ssat@2025' };
+
+let acoes = JSON.parse(localStorage.getItem('ssas_at_acoes') || '[]');
+let nextId = parseInt(localStorage.getItem('ssas_at_nextid') || '1');
+let currentView = 'dashboard';
+let currentEmpresa = 'todos';
+let filterFase = 'todas';
+let currentUser = '';
+
+function save() {
+  localStorage.setItem('ssas_at_acoes', JSON.stringify(acoes));
+  localStorage.setItem('ssas_at_nextid', String(nextId));
+  updateBadges();
+}
+
+// ── AUTH ──────────────────────────────────────────────
+window.onload = () => {
+  setTimeout(() => {
+    document.getElementById('loading').style.display = 'none';
+    const user = sessionStorage.getItem('ssas_user');
+    if (user) { currentUser = user; initApp(); }
+    else { document.getElementById('login').style.display = 'flex'; }
+  }, 1600);
+};
+
+function logar() {
+  const u = document.getElementById('l-user').value.trim();
+  const p = document.getElementById('l-pass').value;
+  if (USERS[u] && USERS[u] === p) {
+    sessionStorage.setItem('ssas_user', u);
+    currentUser = u;
+    document.getElementById('login').style.display = 'none';
+    initApp();
+  } else {
+    document.getElementById('login-err').textContent = '// credenciais inválidas';
+    setTimeout(() => document.getElementById('login-err').textContent = '', 2000);
+  }
+}
+
+function sair() {
+  sessionStorage.removeItem('ssas_user');
+  location.reload();
+}
+
+function initApp() {
+  document.getElementById('app').style.display = 'flex';
+  const av = currentUser.slice(0,2).toUpperCase();
+  document.getElementById('user-avatar').textContent = av;
+  document.getElementById('user-name').textContent = currentUser;
+  updateBadges();
+  renderView('dashboard');
+}
+
+// ── NAV ──────────────────────────────────────────────
+function setView(view, el) {
+  currentView = view;
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  if (el) el.classList.add('active');
+  renderView(view);
+}
+
+function renderView(view) {
+  const titles = {
+    dashboard: ['Dashboard', 'Visão geral — Grupo Hannover'],
+    acoes: ['Ações Trabalhistas', 'Cadastro e análise de processos'],
+    pje: ['Buscar no PJe', 'Consulta pública TRT-2'],
+    prazos: ['Prazos', 'Próximos vencimentos processuais'],
+    provisao: ['Provisão Contábil', 'Estimativa CPC 25 por empresa'],
+  };
+  document.getElementById('topbar-title').textContent = titles[view][0];
+  document.getElementById('topbar-sub').textContent = titles[view][1];
+  const ta = document.getElementById('topbar-actions');
+  ta.innerHTML = '';
+  if (view === 'acoes') {
+    ta.innerHTML = `<button class="btn btn-green btn-sm" onclick="setView('pje', document.querySelector('[onclick*=pje]'))">🔍 Buscar PJe</button>
+    <button class="btn btn-primary btn-sm" onclick="openModal('manual')">+ Cadastrar</button>`;
+  }
+  if (view === 'dashboard') {
+    ta.innerHTML = `<button class="btn btn-primary btn-sm" onclick="openModal('manual')">+ Nova ação</button>`;
+  }
+  const c = document.getElementById('content');
+  if (view === 'dashboard') renderDashboard();
+  else if (view === 'acoes') renderAcoes();
+  else if (view === 'pje') renderPje();
+  else if (view === 'prazos') renderPrazos();
+  else if (view === 'provisao') renderProvisao();
+}
+
+function updateBadges() {
+  document.getElementById('badge-acoes').textContent = acoes.length;
+  const urgentes = acoes.filter(a => {
+    if (!a.prazo) return false;
+    return Math.ceil((new Date(a.prazo) - new Date()) / 86400000) <= 10;
+  }).length;
+  document.getElementById('badge-prazos').textContent = urgentes;
+}
+
+// ── HELPERS ──────────────────────────────────────────
+const fmt = v => new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:0}).format(v||0);
+const riskColor = r => r >= 80 ? 'var(--red)' : r >= 55 ? 'var(--amber)' : 'var(--green)';
+const filtrar = () => {
+  let r = [...acoes];
+  if (currentEmpresa !== 'todos') r = r.filter(a => EMPRESAS[a.empresa]?.grupo === currentEmpresa);
+  if (filterFase !== 'todas') r = r.filter(a => a.fase === filterFase);
+  return r;
+};
+
+// ── DASHBOARD ─────────────────────────────────────────
+function renderDashboard() {
+  const lista = acoes;
+  const totalValor = lista.reduce((s,a) => s+a.valor, 0);
+  const altoRisco = lista.filter(a => a.risco >= 70).length;
+  const exec = lista.filter(a => a.fase === 'Execução').length;
+  const prov = lista.reduce((s,a) => s + a.valor*(a.risco/100), 0);
+
+  const urgentes = lista.filter(a => a.prazo && Math.ceil((new Date(a.prazo)-new Date())/86400000) <= 10);
+
+  let html = `
+  <div class="metrics">
+    <div class="metric-card"><div class="metric-label">Total de ações</div><div class="metric-value mv-blue">${lista.length}</div><div class="metric-sub">grupo todo</div></div>
+    <div class="metric-card"><div class="metric-label">Valor em risco</div><div class="metric-value mv-red">${fmt(totalValor)}</div><div class="metric-sub">soma das causas</div></div>
+    <div class="metric-card"><div class="metric-label">Alto risco ≥70%</div><div class="metric-value mv-amber">${altoRisco}</div><div class="metric-sub">requerem atenção</div></div>
+    <div class="metric-card"><div class="metric-label">Provisão CPC 25</div><div class="metric-value mv-red">${fmt(Math.round(prov))}</div><div class="metric-sub">estimativa contábil</div></div>
+  </div>`;
+
+  if (urgentes.length) {
+    html += `<div class="alert alert-amber" style="margin-bottom:16px">⚠ ${urgentes.length} prazo${urgentes.length>1?'s':''} vencendo em até 10 dias — <span style="cursor:pointer;text-decoration:underline" onclick="setView('prazos',document.querySelector('[onclick*=prazos]'))">ver prazos</span></div>`;
+  }
+
+  if (!lista.length) {
+    html += `<div class="empty-state">
+      <div class="empty-icon">📂</div>
+      <div class="empty-title">Nenhuma ação cadastrada</div>
+      <div class="empty-sub">Clique em "+ Nova ação" para começar<br>ou busque diretamente no PJe TRT-2.</div>
+      <button class="btn btn-primary" onclick="openModal('manual')">+ Cadastrar primeira ação</button>
+    </div>`;
+  } else {
+    const recentes = [...lista].sort((a,b) => b.id - a.id).slice(0,3);
+    html += `<div style="font-size:11px;color:var(--text3);font-family:var(--mono);letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px;">Ações recentes</div>`;
+    recentes.forEach(a => { html += renderAcaoCard(a); });
+    if (lista.length > 3) html += `<button class="btn" style="width:100%;justify-content:center;margin-top:4px" onclick="setView('acoes',document.querySelector('[onclick*=acoes]'))">Ver todas as ${lista.length} ações →</button>`;
+  }
+  document.getElementById('content').innerHTML = html;
+}
+
+// ── AÇÕES ──────────────────────────────────────────────
+function renderAcoes() {
+  const lista = filtrar();
+  let html = `
+  <div class="empresa-tabs">
+    <button class="etab ${currentEmpresa==='todos'?'active':''}" onclick="setEmpresa('todos',this)">Grupo todo</button>
+    <button class="etab fondue ${currentEmpresa==='fondue'?'active':''}" onclick="setEmpresa('fondue',this)">Fondue</button>
+    <button class="etab tomahawk ${currentEmpresa==='tomahawk'?'active':''}" onclick="setEmpresa('tomahawk',this)">Tomahawk</button>
+    <button class="etab hamburgo ${currentEmpresa==='hamburgo'?'active':''}" onclick="setEmpresa('hamburgo',this)">Hamburgo</button>
+  </div>
+  <div class="filter-row">
+    <button class="fbtn ${filterFase==='todas'?'active':''}" onclick="setFase('todas',this)">todas</button>
+    <button class="fbtn ${filterFase==='Inicial'?'active':''}" onclick="setFase('Inicial',this)">inicial</button>
+    <button class="fbtn ${filterFase==='Instrução'?'active':''}" onclick="setFase('Instrução',this)">instrução</button>
+    <button class="fbtn ${filterFase==='Sentença'?'active':''}" onclick="setFase('Sentença',this)">sentença</button>
+    <button class="fbtn ${filterFase==='Recurso'?'active':''}" onclick="setFase('Recurso',this)">recurso</button>
+    <button class="fbtn ${filterFase==='Execução'?'active':''}" onclick="setFase('Execução',this)">execução</button>
+  </div>`;
+  if (!lista.length) {
+    html += `<div class="empty-state">
+      <div class="empty-icon">📋</div>
+      <div class="empty-title">Nenhuma ação encontrada</div>
+      <div class="empty-sub">Nenhuma ação para este filtro.<br>Cadastre ou busque no PJe.</div>
+      <div style="display:flex;gap:8px;justify-content:center">
+        <button class="btn btn-green" onclick="setView('pje',null)">🔍 Buscar PJe</button>
+        <button class="btn btn-primary" onclick="openModal('manual')">+ Cadastrar</button>
+      </div>
+    </div>`;
+  } else {
+    lista.forEach(a => { html += renderAcaoCard(a); });
+  }
+  document.getElementById('content').innerHTML = html;
+}
+
+function renderAcaoCard(a) {
+  const emp = EMPRESAS[a.empresa] || {label:a.empresa, badge:'bp-gray', badgeEmp:'bp-gray'};
+  const fb = FASE_BADGE[a.fase] || 'bp-gray';
+  const analisando = a.aiAnalise === '...';
+  return `<div class="acao-card ${a.fase==='Execução'?'exec':''}">
+    <div class="acao-header">
+      <div style="flex:1;min-width:0">
+        <div class="acao-nome">${a.nome}${a.cargo ? ` <span class="acao-cargo">· ${a.cargo}</span>` : ''}</div>
+        <div class="acao-num">${a.num}</div>
+      </div>
+      <div class="badges">
+        <span class="badge-pill ${fb}">${a.fase}</span>
+        <span class="badge-pill ${emp.badgeEmp}">${emp.label}</span>
+      </div>
+    </div>
+    <div class="acao-meta">
+      ${a.adv ? `<span>👤 ${a.adv}</span>` : ''}
+      ${a.valor ? `<span>💰 ${fmt(a.valor)}</span>` : ''}
+      ${a.prazo ? `<span>📅 ${new Date(a.prazo).toLocaleDateString('pt-BR')}</span>` : ''}
+      ${a.pedidos ? `<span style="color:var(--text3)">${a.pedidos}</span>` : ''}
+    </div>
+    <div class="divider"></div>
+    <div class="ai-header">// análise de risco — IA</div>
+    ${analisando ? `<div style="font-size:11px;color:var(--text3);font-family:var(--mono);padding:6px 0">analisando...</div>` : `
+    <div class="risk-row">
+      <div class="risk-track"><div class="risk-fill" style="width:${a.risco}%;background:${riskColor(a.risco)}"></div></div>
+      <span class="risk-pct" style="color:${riskColor(a.risco)}">${a.risco}%</span>
+    </div>
+    <div class="ai-text">${a.aiAnalise}</div>`}
+    <div class="acao-actions">
+      <button class="btn btn-sm" onclick="analisarIA(${a.id})">↻ reanalisar</button>
+      <button class="btn btn-sm btn-red" onclick="excluir(${a.id})">✕ remover</button>
+    </div>
+  </div>`;
+}
+
+// ── PJe ────────────────────────────────────────────────
+function renderPje() {
+  document.getElementById('content').innerHTML = `
+  <div class="alert alert-blue" style="margin-bottom:16px">O PJe não possui API pública. Cole o texto da tela do tribunal abaixo — a IA extrai os dados automaticamente.</div>
+  <div class="pje-box">
+    <div class="pje-step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <div class="step-title">Acesse o PJe público do TRT-2</div>
+        <div class="step-sub">Pesquise pelo nome da empresa no campo "Parte"</div>
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+          <button class="btn btn-primary btn-sm" onclick="openLink('https://pje.trt2.jus.br/consultaprocessual/pages/consultas/ConsultaProcessual.seam')">↗ Abrir PJe TRT-2</button>
+          <button class="btn btn-sm" onclick="openLink('https://consultaprocessual.tst.jus.br/consultaProcessual/consultaProc.do?conscsjt=&numeroAba=0&cbPesquisa=NMPARTE&dadosPesquisa=hannover&tipoConsulta=NMPARTE')">↗ Buscar "Hannover" no TST</button>
+        </div>
+      </div>
+    </div>
+    <div class="pje-step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <div class="step-title">Copie o texto do processo (Ctrl+A → Ctrl+C)</div>
+        <div class="step-sub">Selecione tudo na página do processo e copie</div>
+        <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+          <button class="btn btn-sm" onclick="copiar(this,'Hannover Fondue')">copiar "Hannover Fondue"</button>
+          <button class="btn btn-sm" onclick="copiar(this,'Hannover Tomahawk')">copiar "Hannover Tomahawk"</button>
+          <button class="btn btn-sm" onclick="copiar(this,'Hamburgo Fries')">copiar "Hamburgo Fries"</button>
+        </div>
+      </div>
+    </div>
+    <div class="pje-step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <div class="step-title">Cole o texto abaixo</div>
+        <textarea id="paste-input" class="paste-area" placeholder="Cole aqui o texto copiado da tela do PJe...
+
+Exemplo:
+0001234-55.2024.5.02.0001
+Reclamante: João Silva
+Reclamada: Hannover Fondue
+Fase: Instrução
+Último movimento: Audiência marcada para 15/02/2025"></textarea>
+      </div>
+    </div>
+    <div class="pje-step" style="margin-bottom:0">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <div class="step-title">Selecione a empresa e processe</div>
+        <select id="paste-empresa" style="margin-top:8px;width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:var(--mono);font-size:12px;padding:8px 10px;outline:none">
+          <option value="fondue-moema">Hannover Fondue — Moema</option>
+          <option value="fondue-tatuape">Hannover Fondue — Tatuapé</option>
+          <option value="fondue-perdizes">Hannover Fondue — Perdizes</option>
+          <option value="tomahawk">Hannover Tomahawk</option>
+          <option value="hamburgo">Hamburgo Fries</option>
+        </select>
+        <button class="btn btn-primary" style="margin-top:10px;width:100%" onclick="interpretarPaste()">↗ Interpretar com IA e cadastrar</button>
+      </div>
+    </div>
+  </div>
+  <div id="paste-status"></div>`;
+}
+
+// ── PRAZOS ──────────────────────────────────────────────
+function renderPrazos() {
+  const lista = [...acoes].filter(a => a.prazo).sort((a,b) => a.prazo > b.prazo ? 1 : -1);
+  if (!lista.length) {
+    document.getElementById('content').innerHTML = `<div class="empty-state"><div class="empty-icon">📅</div><div class="empty-title">Sem prazos cadastrados</div><div class="empty-sub">Prazos aparecerão aqui conforme<br>você cadastrar as ações.</div></div>`;
+    return;
+  }
+  const hoje = new Date();
+  let html = '';
+  lista.forEach(a => {
+    const diff = Math.ceil((new Date(a.prazo) - hoje) / 86400000);
+    const emp = EMPRESAS[a.empresa] || {label:a.empresa};
+    const cor = diff <= 7 ? 'var(--red)' : diff <= 30 ? 'var(--amber)' : 'var(--green)';
+    html += `<div class="prazo-card ${diff<=7?'urgente':''}">
+      <div style="flex:1">
+        <div class="prazo-nome">${a.nome}</div>
+        <div class="prazo-sub">${emp.label} · ${a.fase}${a.adv?' · '+a.adv:''}</div>
+        ${diff<=7 ? `<div class="urgente-tag">// prazo crítico — notificar advogado</div>` : ''}
+      </div>
+      <div>
+        <div class="prazo-dias" style="color:${cor}">${diff}d</div>
+        <div style="font-size:10px;color:var(--text3);font-family:var(--mono);text-align:right">${new Date(a.prazo).toLocaleDateString('pt-BR')}</div>
+      </div>
+    </div>`;
+  });
+  document.getElementById('content').innerHTML = html;
+}
+
+// ── PROVISÃO ────────────────────────────────────────────
+function renderProvisao() {
+  if (!acoes.length) {
+    document.getElementById('content').innerHTML = `<div class="empty-state"><div class="empty-icon">💰</div><div class="empty-title">Sem dados para provisão</div><div class="empty-sub">Cadastre ações para calcular<br>a provisão contábil CPC 25.</div></div>`;
+    return;
+  }
+  const total = acoes.reduce((s,a) => s + a.valor*(a.risco/100), 0);
+  const grupos = {
+    'Hannover Fondue': acoes.filter(a => EMPRESAS[a.empresa]?.grupo === 'fondue'),
+    'Hannover Tomahawk': acoes.filter(a => a.empresa === 'tomahawk'),
+    'Hamburgo Fries': acoes.filter(a => a.empresa === 'hamburgo'),
+  };
+  let html = `
+  <div class="prov-total">
+    <div>
+      <div class="prov-label">Provisão total recomendada — Grupo Hannover</div>
+      <div class="prov-value">${fmt(Math.round(total))}</div>
+      <div class="prov-sub">metodologia: valor da causa × risco IA · base CPC 25</div>
+    </div>
+  </div>`;
+  Object.entries(grupos).forEach(([nome,lista]) => {
+    if (!lista.length) return;
+    const prov = lista.reduce((s,a) => s + a.valor*(a.risco/100), 0);
+    html += `<div class="acao-card" style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div style="font-size:14px;font-weight:500">${nome}</div>
+        <div style="font-family:var(--mono);font-size:18px;font-weight:600;color:var(--red)">${fmt(Math.round(prov))}</div>
+      </div>`;
+    lista.forEach(a => {
+      html += `<div class="prov-row">
+        <div>
+          <div class="prov-empresa">${a.nome}</div>
+          <div class="prov-detail">${EMPRESAS[a.empresa]?.label||a.empresa} · ${a.fase} · risco ${a.risco}%</div>
+        </div>
+        <div class="prov-amount">${fmt(Math.round(a.valor*(a.risco/100)))}</div>
+      </div>`;
+    });
+    html += '</div>';
+  });
+  document.getElementById('content').innerHTML = html;
+}
+
+// ── MODAL / FORM ──────────────────────────────────────
+function openModal(t) { document.getElementById('modal-'+t).classList.add('open'); }
+function closeModals() { document.querySelectorAll('.modal-bg').forEach(m => m.classList.remove('open')); }
+
+function setEmpresa(e, el) {
+  currentEmpresa = e;
+  document.querySelectorAll('.etab').forEach(t => t.classList.remove('active'));
+  if (el) el.classList.add('active');
+  renderAcoes();
+}
+function setFase(f, el) {
+  filterFase = f;
+  document.querySelectorAll('.fbtn').forEach(b => b.classList.remove('active'));
+  if (el) el.classList.add('active');
+  renderAcoes();
+}
+
+function salvarManual() {
+  const nome = document.getElementById('f-nome').value.trim();
+  if (!nome) { toast('Informe o nome do reclamante'); return; }
+  const nova = {
+    id: nextId++,
+    num: document.getElementById('f-num').value || 'A numerar',
+    nome, cargo: document.getElementById('f-cargo').value || '',
+    empresa: document.getElementById('f-empresa').value,
+    valor: parseFloat(document.getElementById('f-valor').value) || 0,
+    fase: document.getElementById('f-fase').value,
+    data: document.getElementById('f-data').value || new Date().toISOString().slice(0,10),
+    adv: document.getElementById('f-adv').value || '',
+    pedidos: document.getElementById('f-pedidos').value || '',
+    obs: document.getElementById('f-obs').value || '',
+    prazo: document.getElementById('f-prazo').value || '',
+    risco: 0, aiAnalise: '...',
+  };
+  acoes.push(nova); save(); closeModals();
+  ['f-num','f-nome','f-cargo','f-valor','f-adv','f-pedidos','f-obs','f-prazo'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  toast('✓ Ação cadastrada. Analisando com IA...');
+  renderView(currentView);
+  gerarAnaliseIA(nova);
+}
+
+// ── IA ──────────────────────────────────────────────
+async function gerarAnaliseIA(acao) {
+  const ctx = EMPRESA_CTX[acao.empresa] || 'Empresa do Grupo Hannover, São Paulo.';
+  const prompt = `Você é advogado trabalhista especialista em TRT-2 São Paulo. Analise objetivamente esta ação:
+
+Empresa: ${ctx}
+Reclamante: ${acao.nome}${acao.cargo?' ('+acao.cargo+')':''}
+Pedidos: ${acao.pedidos||'não informado'}
+Valor da causa: R$ ${(acao.valor||0).toLocaleString('pt-BR')}
+Fase: ${acao.fase}
+Contexto: ${acao.obs||'não informado'}
+
+Retorne SOMENTE JSON válido, sem markdown:
+{"risco":<0-100>,"analise":"<2-3 frases técnicas com recomendação prática>"}`;
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:600, messages:[{role:'user',content:prompt}] })
+    });
+    const data = await resp.json();
+    const parsed = JSON.parse(data.content.map(i=>i.text||'').join('').replace(/```json|```/g,'').trim());
+    acao.risco = Math.max(0, Math.min(100, parseInt(parsed.risco)||50));
+    acao.aiAnalise = parsed.analise || 'Sem análise.';
+  } catch(e) {
+    acao.risco = 50; acao.aiAnalise = 'Análise indisponível. Revise manualmente.';
+  }
+  save(); renderView(currentView);
+}
+
+async function analisarIA(id) {
+  const a = acoes.find(x => x.id === id);
+  if (!a) return;
+  a.aiAnalise = '...'; a.risco = 0; save(); renderView(currentView);
+  await gerarAnaliseIA(a);
+}
+
+function excluir(id) {
+  if (!confirm('Remover esta ação do sistema?')) return;
+  acoes = acoes.filter(a => a.id !== id); save(); renderView(currentView);
+  toast('Ação removida.');
+}
+
+// ── PJe PASTE ────────────────────────────────────────
+async function interpretarPaste() {
+  const texto = document.getElementById('paste-input')?.value?.trim();
+  const empresa = document.getElementById('paste-empresa')?.value;
+  if (!texto) { toast('Cole o texto do PJe primeiro'); return; }
+  const st = document.getElementById('paste-status');
+  st.innerHTML = '<div class="alert alert-blue">// interpretando com IA...</div>';
+  const prompt = `Extraia os dados deste texto copiado do PJe e retorne SOMENTE JSON válido, sem markdown:
+
+${texto}
+
+Campos: {"num":"número do processo ou vazio","nome":"nome do reclamante","cargo":"cargo se mencionado ou vazio","valor":0,"fase":"Inicial|Instrução|Sentença|Recurso|Execução","pedidos":"pedidos separados por vírgula ou vazio","adv":"advogado da reclamada se mencionado ou vazio","prazo":"YYYY-MM-DD se houver prazo futuro ou vazio","obs":"resumo do último movimento"}`;
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:800, messages:[{role:'user',content:prompt}] })
+    });
+    const data = await resp.json();
+    const parsed = JSON.parse(data.content.map(i=>i.text||'').join('').replace(/```json|```/g,'').trim());
+    const nova = { id:nextId++, ...parsed, empresa, risco:0, aiAnalise:'...', valor:parseFloat(parsed.valor)||0 };
+    acoes.push(nova); save();
+    st.innerHTML = '<div class="alert alert-green">// processo cadastrado. Analisando risco...</div>';
+    document.getElementById('paste-input').value = '';
+    toast('✓ Processo importado do PJe');
+    renderView(currentView);
+    await gerarAnaliseIA(nova);
+    st.innerHTML = '';
+  } catch(e) {
+    st.innerHTML = '<div class="alert alert-amber">// erro ao interpretar. Tente o cadastro manual.</div>';
+  }
+}
+
+// ── UTILS ────────────────────────────────────────────
+function copiar(el, txt) {
+  navigator.clipboard?.writeText(txt);
+  const orig = el.textContent; el.textContent = '✓ copiado';
+  setTimeout(() => el.textContent = orig, 1500);
+}
+function openLink(url) { window.open(url, '_blank'); }
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>
